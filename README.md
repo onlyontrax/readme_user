@@ -1,8 +1,7 @@
-# readme_user
-readme file draft for frontend
+# TRAX app Set-up and installation
+💡 To note: Although we have outlined how to install and deploy below, until we open source the backend you will not be able to run the app. The entire app will be open sourced in the near future so stay tuned. 
 
-
-## 1. Set-up and installation
+## 1. 
 
 1. Clone this GitHub repository:
 
@@ -10,7 +9,7 @@ readme file draft for frontend
 git clone https://github.com/onlyontrax/dApp.git
 ```
 
-1. Check Node.js version 
+2. Check Node.js version 
 
 ```jsx
 node -v
@@ -19,7 +18,7 @@ node -v
 > Must have at least version 12.22.7
 > 
 
-1. Check that Homebrew is installed.  
+3. Check that Homebrew is installed.  
 
 ```jsx
 brew -v
@@ -28,7 +27,7 @@ brew -v
 > This is not essential but will make the rest of the installation easier.
 > 
 
-1. Install Redis 
+4. Install Redis 
 
 ```jsx
 brew install redis
@@ -51,7 +50,7 @@ To start redis:
 
 To run server:
 
-`redis -server`
+`redis-server`
 
 To stop redis:
 
@@ -76,46 +75,18 @@ brew install ffmpeg
 
 
 
-## 2. Configure API & server
+## 2. Configure and deploy frontend
 
-Once all packages are installed, open codebase in root directory. Navigate to the api folder.
+Once all packages are installed, open codebase in root directory. Navigate to the user folder.
 
 ```jsx
-cd api
+cd user
 ```
 
 Run yarn to install node dependencies
 
 ```jsx
 yarn
-```
-
-Navigate to the api folder and create a .env file at the root 
-
-Paste contents below into the .env file you have created:
-
-```
-NODE_ENV=localhost
-HTTP_PORT=8080
-# is private text. We use to generate jwt, and verify token or hash password
-TOKEN_SECRET=s6u6jq3-Z5dn]H8}
-MONGO_URI=mongodb+srv://olfrank:Hundorp97@atlascluster.djhaasy.mongodb.net/?retryWrites=true&w=majority
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
-REDIS_DB=0
-REDIS_PREFIX=bee_queue
-
-# Use for seed and some features
-DOMAIN=onlyontrax.com
-
-# api domain
-BASE_URL=http://localhost:8080
-USER_URL=http://localhost:8081
-
-TEMPLATE_DIR=templates
-MAILER_CONCURRENCY=1
-
-EMAIL_VERIFIED_SUCCESS_URL=https://www.onlyontrax.com/
 ```
 
 Start the Redis server
@@ -201,55 +172,135 @@ Install the following:
 yarn add @types/react@latest @types/react-dom@latest --dev
 ```
 
-Navigate to the admin folder and create a .env file at the root
 
-```jsx
-cd admin
+##2. Deploy payment smart contracts
+
+1. Navigate into payments folder
+```
+cd smart-contracts/payments
 ```
 
-Paste contents below into the .env file you have created:
-
+2. Make sure dfx is installed. And version must be 14.3
 ```
-NODE_ENV=localhost
-PORT=8082
-# is api uri we will use in server side only. We don't share this url publicly 
-API_ENDPOINT=http://localhost:8080
-# is public utl where user can call api with ajax request
-NEXT_PUBLIC_API_ENDPOINT=http://localhost:8080
-# is base url to your front website. We use this param to show public link in some sections like Posts
-NEXT_PUBLIC_SITE_URL=http://localhost:8081
-# is url to paypal xclick form. It will help you yo configure sandbox or production 
-NEXT_PUBLIC_PAYPAY_PAYOUT_URL=https://www.paypal.com/cgi-bin/webscr
-
-NEXT_PUBLIC_MAX_SIZE_IMAGE=20
-NEXT_PUBLIC_MAX_SIZE_FILE=1000
-NEXT_PUBLIC_MAX_SIZE_TEASER=1000
-NEXT_PUBLIC_MAX_SIZE_VIDEO=5000
-
-NEXT_PUBLIC_BUILD_VERSION=1.3.0
+dfx --version
 ```
 
-Run yarn to install node dependencies 
-
-```jsx
-yarn
+3. Run the local replica
+```
+dfx start --background --clean
 ```
 
-Run yarn dev
+4. In a new terminal cd into smart-contracts/payments again
+```
+cd smart-contracts/payments
+``` 
 
-```jsx
-yarn dev
+5. In dfx.json make sure the ledger declaration is using the private did 
+```
+"ledger": {
+      "type": "custom",
+      "wasm": "ledger.wasm",
+      "candid": "ledger.private.did"
+    },
 ```
 
-Visit localhost:8082 and you should be greeted with the Admin panel:
+6. Then export minter address
+```
+dfx identity use minter
+export MINTER_ACCOUNT_ID=$(dfx ledger account-id)
+```
 
-`Username: admin@onlyontrax.com`
+7. Then export default address account id
+```
+dfx identity use default
+export DEFAULT_ACCOUNT_ID=$(dfx ledger account-id)
+```
 
-`Password: adminadmin`
+8. Then deploy ledger canister 
+```
+dfx deploy ledger --argument '(record {minting_account = "'${MINTER_ACCOUNT_ID}'"; initial_values = vec { record { "'${DEFAULT_ACCOUNT_ID}'"; record { e8s=100_000_000_000_000 } }; }; send_whitelist = vec {}})'
+```
 
-**Install Studio 3T**
+9. Make sure your usinf default identity and then deploy ckbtc canister
+```
+dfx identity use default
+export PRINCIPAL=$(dfx identity get-principal)
 
-To download Studio3T visit https://studio3t.com/download/  and create a free account 
+dfx deploy ckbtc_ledger --argument '(variant {Init = record {minting_account = record { owner = principal "'${PRINCIPAL}'" };transfer_fee = 10;token_symbol = "ckBTC";token_name ="Token ckBTC";metadata = vec {};initial_balances = vec {record { record {owner = principal "'${PRINCIPAL}'"}; 100_000_000_000 } };archive_options = record {num_blocks_to_archive = 10_000;trigger_threshold = 20_000;cycles_for_archive_creation = opt 4_000_000_000_000;controller_id = principal "'${PRINCIPAL}'";};}})'
+```
 
-You can find the URI for MongoDB in the .env file of the api folder.
-</aside>
+9(a). To transfer ckbtc to another principal run:
+```
+dfx canister call ckbtc_ledger icrc1_transfer '(record {to = record {owner = principal "'${DESTINATION_PRINCIPAL}'"};amount=100_000_000_000},)';
+```
+
+10. Prior to deploying tipping.mo, ensure that the canister IDs for both the ledger and ckbtc ledger, which were obtained after the deployment mentioned earlier, are accurately embedded in the corresponding sections of the smart contract. Then save tipping.mo if any changes were made before deployment.
+```
+dfx deploy tipping 
+```
+
+11. Deploy xrc canister
+```
+dfx deploy xrc
+```
+
+12. Make the same check as step 10 for ckbtc ledger, ledger, and xrc in ppv.mo before deployment. Then to deploy run:
+```
+dfx deploy ppv
+```
+
+
+
+##2. Deploy backend smart contracts
+
+1. Navigate into backend folder
+```
+cd smart-contracts/backend
+```
+
+2. Make sure dfx is installed. And version must be 14.3
+```
+dfx --version
+```
+
+3. Run the local replica
+```
+dfx start --background --clean
+```
+
+4. In a new terminal cd into smart-contracts/backend again
+```
+cd smart-contracts/backend
+``` 
+
+10. deploy manager smart contract
+```
+dfx deploy manager 
+```
+
+11. To generate did files for account-bucket.mo and content-bucket.mo paste this declaration into dfx.json
+```
+"account_bucket_artist": {
+      "main": "src/backend/artist/account-bucket.mo",
+      "type": "motoko"
+    },
+
+"content_bucket_artist": {
+      "main": "src/backend/artist/content-bucket.mo",
+      "type": "motoko"
+    },
+```
+
+12. Then run this command. 
+```
+dfx deploy account_bucket_artist
+dfx deploy content_bucket_artist
+```
+
+14. It will return the error ("Error: Invalid data: Expected arguments but found none."). That can be ignored. Then run this command to copy the generated files to the src/declarations folder 
+```
+rsync -av .dfx/local/canisters/account_bucket_artist ./src/declarations --exclude=account_bucket_artist.wasm
+rsync -av .dfx/local/canisters/content_bucket_artist ./src/declarations --exclude=content_bucket_artist.wasm
+```
+
+15. Redo steps 11-14 every time you change make changes to account-bucket.mo and/or content-bucket.mo
