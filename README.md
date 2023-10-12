@@ -172,8 +172,11 @@ Install the following:
 yarn add @types/react@latest @types/react-dom@latest --dev
 ```
 
-
-##2. Deploy payment smart contracts
+<br/>
+<br/>
+<br/>
+<br/>
+## Deploy payment smart contracts
 
 1. Navigate into payments folder
 ```
@@ -251,7 +254,7 @@ dfx deploy ppv
 
 
 
-##2. Deploy backend smart contracts
+## Deploy backend smart contracts
 
 1. Navigate into backend folder
 ```
