@@ -176,6 +176,7 @@ yarn add @types/react@latest @types/react-dom@latest --dev
 <br/>
 <br/>
 <br/>
+
 ## Deploy payment smart contracts
 
 1. Navigate into payments folder
