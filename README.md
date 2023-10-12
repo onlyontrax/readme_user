@@ -2,21 +2,37 @@
 readme file draft for frontend
 
 
+## 1. Set-up and installation
 
+1. Clone this GitHub repository:
 
-
-Clone this GitHub repository:
+```jsx
 git clone https://github.com/onlyontrax/dApp.git
+```
 
+1. Check Node.js version 
 
-Check Node.js version (Must be >= 12.22.7)
+```jsx
 node -v
+```
 
-Check that Homebrew is installed (This is not essential but will make the rest of the installation easier.)
+> Must have at least version 12.22.7
+> 
+
+1. Check that Homebrew is installed.  
+
+```jsx
 brew -v
+```
 
-Install Redis 
+> This is not essential but will make the rest of the installation easier.
+> 
+
+1. Install Redis 
+
+```jsx
 brew install redis
+```
 
 <aside>
 💡 To restart Redis after an upgrade:
@@ -43,3 +59,18 @@ To stop redis:
 
 </aside>
 
+<aside>
+💡 https://formulae.brew.sh/formula/redis#default
+
+</aside>
+
+1. Install FFMPEG 
+
+```jsx
+brew install ffmpeg
+```
+
+<aside>
+💡 https://formulae.brew.sh/formula/ffmpeg#default
+
+</aside>
